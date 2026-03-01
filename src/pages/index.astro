@@ -13,29 +13,32 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
             :root {
                 --accent: #e0e0d1;
                 --bg-light: #f8f9fa;
+                --orb-color-solid: #f5f5dc; /* El color base de tu esfera */
                 --glass: rgba(255, 255, 255, 0.4);
-                --orb-color: radial-gradient(circle at 30% 30%, #fff, #f5f5dc, #d4d4b1);
+                --orb-gradient: radial-gradient(circle at 30% 30%, #fff, #f5f5dc, #d4d4b1);
             }
 
             body {
                 background-color: var(--bg-light);
                 color: #2d2d2d;
                 overflow-x: hidden;
-                /* Fondo con gradiente de malla suave típico de 2026 */
+                /* El fondo inicial con gradiente de malla */
                 background-image: 
                     radial-gradient(at 0% 0%, hsla(60,15%,90%,1) 0, transparent 50%), 
                     radial-gradient(at 100% 100%, hsla(200,10%,95%,1) 0, transparent 50%);
+                transition: background-color 0.3s ease-out;
             }
 
             .hero-container {
                 position: relative;
-                height: 100vh;
+                min-height: 100vh;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 text-align: center;
-                z-index: 10;
+                z-index: 1;
+                padding: 20px;
             }
 
             h1 {
@@ -57,31 +60,34 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                 margin-top: 1rem;
             }
 
-            /* --- LA ESFERA DINÁMICA --- */
             .orb-wrapper {
                 position: absolute;
-                top: 60%;
+                top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
                 z-index: -1;
                 pointer-events: none;
+                width: 100%;
+                display: flex;
+                justify-content: center;
             }
 
             .light-orb {
                 width: 300px;
                 height: 300px;
                 border-radius: 50%;
-                background: var(--orb-color);
+                background: var(--orb-gradient);
                 box-shadow: 
                     0 0 80px rgba(245, 245, 220, 0.4),
                     inset -20px -20px 50px rgba(0,0,0,0.1);
                 filter: blur(2px);
-                transition: transform 0.1s ease-out, filter 0.3s ease;
-                will-change: transform, filter, box-shadow;
+                transition: transform 0.1s ease-out;
+                will-change: transform, filter;
             }
 
-            /* --- SECCIÓN DE TARJETAS FLUIDAS --- */
             .floating-section {
+                position: relative;
+                z-index: 10;
                 padding: 100px 20px;
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -96,17 +102,18 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
                 -webkit-backdrop-filter: blur(20px) saturate(180%);
                 border: 1px solid rgba(255, 255, 255, 0.7);
                 padding: 3rem 2rem;
-                border-radius: 40px; /* Bordes mucho más redondeados para 2026 */
+                border-radius: 40px;
                 transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
             }
 
             .card:hover {
                 transform: translateY(-15px) scale(1.02);
                 background: rgba(255, 255, 255, 0.6);
-                box-shadow: 0 30px 60px rgba(0,0,0,0.05);
             }
 
             main {
+                position: relative;
+                z-index: 10;
                 max-width: 800px;
                 margin: 0 auto;
                 padding: 100px 24px;
@@ -117,6 +124,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 
             @media (max-width: 768px) {
                 .light-orb { width: 200px; height: 200px; }
+                .hero-container { padding-top: 150px; }
             }
         </style>
     </head>
@@ -159,27 +167,30 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
         <script>
             const orb = document.getElementById('dynamic-orb');
             const title = document.getElementById('title');
+            const body = document.body;
             
             window.addEventListener('scroll', () => {
                 const scrolled = window.scrollY;
                 const val = scrolled * 0.5;
                 
+                // 1. Control de la Esfera
                 if (orb) {
-                    // 1. Movemos la esfera a distinta velocidad (Parallax)
-                    // 2. Cambiamos la escala para dar profundidad
-                    // 3. Modificamos el filtro de desenfoque y rotación de color
-                    orb.style.transform = `translate3d(0, ${val * 0.8}px, 0) scale(${1 + scrolled * 0.001})`;
-                    
-                    // Efecto de luz: a medida que bajas, la esfera se vuelve más "difusa" o brillante
-                    orb.style.filter = `blur(${scrolled * 0.02}px) brightness(${1 + scrolled * 0.0005})`;
-                    
-                    // Cambio de iluminación interna (simula que la luz cambia de ángulo)
-                    orb.style.background = `radial-gradient(circle at ${30 + (scrolled/10)}% ${30 + (scrolled/20)}%, #fff, #f5f5dc, #d4d4b1)`;
+                    // La esfera crece más rápido para dar el efecto de "entrar"
+                    const scale = 1 + scrolled * 0.005; 
+                    orb.style.transform = `translate3d(0, ${val * 0.8}px, 0) scale(${scale})`;
+                    orb.style.filter = `blur(${scrolled * 0.01}px) brightness(${1 + scrolled * 0.0005})`;
                 }
 
+                // 2. Control del Fondo (Efecto Inmersión)
+                // Cuando llegas a 500px de scroll, el fondo es 100% el color de la bola
+                const immersionOpacity = Math.min(scrolled / 500, 1);
+                // Interpolamos de blanco/gris claro a crema (#f5f5dc)
+                body.style.backgroundColor = `rgba(245, 245, 220, ${immersionOpacity})`;
+
+                // 3. Control del Título
                 if (title) {
                     title.style.transform = `translate3d(0, ${scrolled * 0.2}px, 0)`;
-                    title.style.opacity = `${1 - scrolled / 600}`;
+                    title.style.opacity = `${1 - scrolled / 500}`;
                 }
             });
         </script>
